@@ -2,6 +2,9 @@
 
 A simple, lightweight web application designed to parse and display vocabulary backups from the ReadEra book reader.
 
+
+<img width="2462" height="1262" alt="Screenshot" src="https://github.com/user-attachments/assets/806dabb9-107a-4dae-83ad-7162241f0260" />
+
 ## Features
 - **JSON Parsing**: Handles `library.json` exports from ReadEra.
 - **Word & Example Display**: Shows words with their original book context and highlighting.
