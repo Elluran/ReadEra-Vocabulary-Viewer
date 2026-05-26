@@ -1,0 +1,11 @@
+[project]
+name = "readera-backup-reader"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "nltk>=3.9.4",
+    "requests>=2.34.2",
+]
