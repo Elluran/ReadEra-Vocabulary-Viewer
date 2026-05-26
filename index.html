@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReadEra Vocabulary Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ReadEra Vocabulary Viewer</h1>
+            <div class="controls">
+                <label for="fileInput" class="custom-file-upload">
+                    Choose File
+                </label>
+                <input type="file" id="fileInput" accept=".json">
+                <div class="sort-control">
+                    <label for="sortSelect">Sort by:</label>
+                    <select id="sortSelect">
+                        <option value="alphabetical">Alphabetical</option>
+                        <option value="frequency_desc">Most Common First</option>
+                        <option value="frequency_asc">Rare Words First</option>
+                        <option value="examples" selected>Number of Examples</option>
+                        <option value="ratio">Ratio (Position in Book)</option>
+                        <option value="date_desc">Newest First</option>
+                        <option value="date_asc">Oldest First</option>
+                    </select>
+                </div>
+                <div class="anki-controls">
+                    <label class="anki-toggle">
+                        <input type="checkbox" id="hideAnkiToggle"> Hide words already in Anki
+                    </label>
+                    <button id="syncAnkiBtn">Sync Anki</button>
+                    <span id="ankiStatus" class="status-dot" title="Anki connection status"></span>
+                </div>
+                <div class="group-control">
+                    <label class="group-toggle">
+                        <input type="checkbox" id="groupWordsToggle"> Group similar words
+                    </label>
+                </div>
+                <div class="search-all-control">
+                    <label class="search-all-toggle">
+                        <input type="checkbox" id="searchAllExamplesToggle"> Search all examples
+                    </label>
+                </div>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search words...">
+                <div class="add-word-box">
+                    <input type="text" id="addWordInput" placeholder="Add new word...">
+                    <button id="addWordBtn">Add</button>
+                </div>
+                <div id="wordCounter" class="word-counter"></div>
+                <button id="toggleBookListBtn" class="icon-btn" title="Manage Books">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3,4H21V6H3V4M3,9H21V11H3V9M3,14H21V16H3V14M3,19H21V21H3V19Z"/></svg>
+                </button>
+            </div>
+        </header>
+        <div class="content-wrapper">
+            <main id="wordList">
+                <p class="message">Loading library...</p>
+            </main>
+            <aside id="dictionaryContainer">
+                <div class="dict-tabs">
+                    <button class="dict-tab active" data-dict="cambridge">Cambridge</button>
+                    <button class="dict-tab" data-dict="merriam">Merriam-Webster</button>
+                </div>
+                <div id="dictionaryView">
+                    <div class="dictionary-placeholder">
+                        <p>Click on a word to see its definition</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

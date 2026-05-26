@@ -1,0 +1,644 @@
+html {
+    overflow-y: scroll;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.content-wrapper {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+#wordList {
+    flex: 1;
+    min-width: 0;
+}
+
+#dictionaryContainer {
+    flex: 1;
+    position: sticky;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 40px);
+}
+
+.dict-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: -1px;
+    z-index: 1;
+}
+
+.dict-tab {
+    padding: 8px 16px;
+    background-color: #eee;
+    color: #666;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.dict-tab:hover {
+    background-color: #e5e5e5;
+}
+
+.dict-tab.active {
+    background-color: #fcfcfc;
+    color: #2c3e50;
+    border-color: #eee;
+    border-bottom: 1px solid #fcfcfc;
+    padding-bottom: 9px;
+}
+
+#dictionaryView {
+    background: #fcfcfc;
+    padding: 20px;
+    border: 1px solid #eee;
+    border-radius: 0 8px 8px 8px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+header {
+    border-bottom: 2px solid #eee;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+}
+
+h1 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.sort-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.sort-control select {
+    height: 36px;
+    padding: 0 5px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+}
+
+.search-box {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.search-box > input {
+    flex: 2;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.word-counter {
+    font-size: 14px;
+    color: #7f8c8d;
+    font-weight: 500;
+    margin-left: auto;
+    padding: 5px 10px;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    border: 1px solid #eee;
+}
+
+.add-word-box {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+}
+
+.add-word-box input {
+    flex: 1;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.anki-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-left: 10px;
+    border-left: 2px solid #eee;
+    margin-left: 5px;
+}
+
+.anki-toggle, .group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.group-control, .search-all-control {
+    margin-left: 10px;
+    padding-left: 10px;
+    border-left: 2px solid #eee;
+}
+
+.search-all-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+#ankiDeckInput {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    flex: 1;
+    min-width: 150px;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #ccc;
+    display: inline-block;
+}
+
+.status-dot.online {
+    background-color: #2ecc71;
+    box-shadow: 0 0 5px #2ecc71;
+}
+
+.status-dot.offline {
+    background-color: #e74c3c;
+}
+
+.word-item {
+    margin-bottom: 25px;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+}
+
+.word-item:hover {
+    background-color: #f0f7ff;
+}
+
+.word-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.word-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #e67e22;
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.variations {
+    font-size: 14px;
+    color: #7f8c8d;
+    font-weight: normal;
+    font-style: italic;
+}
+
+.book-title {
+    font-size: 14px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+.example-list {
+    margin-top: 10px;
+}
+
+.example-list-container {
+    position: relative;
+}
+
+.copy-examples-btn {
+    position: absolute;
+    top: -35px;
+    right: 0;
+    height: 24px;
+    padding: 0 8px;
+    font-size: 12px;
+    background-color: #ecf0f1;
+    color: #7f8c8d;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-examples-btn:hover {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.copy-examples-btn.copied {
+    background-color: #2ecc71;
+    color: white;
+    border-color: #2ecc71;
+}
+
+.example-spoiler {
+    margin-top: 10px;
+}
+
+.example-spoiler summary {
+    cursor: pointer;
+    color: #3498db;
+    font-weight: 500;
+    outline: none;
+    user-select: none;
+}
+
+.example-spoiler summary:hover {
+    text-decoration: underline;
+}
+
+.example-spoiler[open] summary {
+    margin-bottom: 10px;
+}
+
+.example-item {
+    background: #f9f9f9;
+    padding: 10px;
+    border-left: 4px solid #3498db;
+    margin-bottom: 10px;
+    font-style: italic;
+}
+
+.highlight {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: bold;
+    font-style: normal;
+}
+
+.message {
+    text-align: center;
+    color: #7f8c8d;
+    margin-top: 50px;
+}
+
+.dictionary-placeholder {
+    text-align: center;
+    color: #999;
+    margin-top: 50px;
+}
+
+.dict-separator {
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 15px 0;
+}
+
+.dict-entry {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.dict-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.dict-header h2 {
+    margin: 0;
+}
+
+.dict-entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.dict-def {
+    font-weight: 500;
+    flex: 1;
+}
+
+.dict-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 4px;
+    align-items: center;
+}
+
+.dict-pos-label {
+    font-weight: bold;
+    color: #2980b9;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    margin-right: 4px;
+}
+
+.dict-label {
+    font-size: 0.75em;
+    background-color: #fef9e7;
+    color: #9a7d0a;
+    padding: 1px 6px;
+    border-radius: 10px;
+    border: 1px solid #f9e79f;
+    font-weight: bold;
+    text-transform: lowercase;
+    font-style: italic;
+}
+
+.copy-all-btn, .copy-def-btn {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 12px;
+    background-color: #ecf0f1;
+    color: #7f8c8d;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-all-btn:hover, .copy-def-btn:hover {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.copy-all-btn.copied, .copy-def-btn.copied {
+    background-color: #2ecc71;
+    color: white;
+    border-color: #2ecc71;
+}
+
+.dict-eg {
+    font-style: italic;
+    color: #666;
+    font-size: 0.9em;
+    margin-left: 0;
+    border-left: 2px solid #ddd;
+    padding-left: 10px;
+    margin-bottom: 5px;
+}
+
+.pron-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.pron-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #f0f4f8;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.pron-region {
+    font-weight: bold;
+    font-size: 0.8em;
+    color: #555;
+    text-transform: uppercase;
+}
+
+.pron-ipa {
+    font-family: "Lucida Sans Unicode", "Arial Unicode MS", sans-serif;
+    color: #2c3e50;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.pron-ipa:hover {
+    background-color: #d6eaf8;
+}
+
+.pron-ipa.copied {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.pron-actions {
+    display: flex;
+    gap: 2px;
+}
+
+.audio-btn, .copy-audio-btn, .copy-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    color: #3498db;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.audio-btn:hover, .copy-audio-btn:hover, .copy-btn:hover {
+    background-color: #d6eaf8;
+    color: #2980b9;
+}
+
+.copy-audio-btn.copied {
+    color: #2ecc71;
+}
+
+.copy-btn.copied {
+    color: #2ecc71;
+}
+
+button, .custom-file-upload {
+    height: 36px;
+    padding: 0 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    transition: background-color 0.2s;
+    vertical-align: middle;
+}
+
+button:hover, .custom-file-upload:hover {
+    background-color: #2980b9;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.dict-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.dict-img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 4px;
+    cursor: zoom-in;
+    border: 1px solid #eee;
+    transition: transform 0.2s;
+}
+
+.dict-img:hover {
+    transform: scale(1.02);
+}
+
+.icon-btn {
+    background: none;
+    border: 1px solid #ddd;
+    color: #7f8c8d;
+    padding: 0 8px;
+    height: 36px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.icon-btn:hover {
+    background-color: #ecf0f1;
+    color: #3498db;
+    border-color: #3498db;
+}
+
+.icon-btn.active {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.book-list-view {
+    padding: 20px;
+}
+
+.book-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.book-list-view h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #2c3e50;
+}
+
+.search-excluded-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 14px;
+    color: #7f8c8d;
+}
+
+.book-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.book-item:last-child {
+    border-bottom: none;
+}
+
+.book-item label {
+    flex: 1;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.book-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
