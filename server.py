@@ -14,7 +14,15 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 
 # Initialize NLTK
-lemmatizer = WordNetLemmatizer()
+try:
+    lemmatizer = WordNetLemmatizer()
+    # Test if data is available
+    lemmatizer.lemmatize("test")
+except LookupError:
+    print("NLTK data not found. Downloading...")
+    nltk.download('wordnet')
+    nltk.download('omw-1.4')
+    lemmatizer = WordNetLemmatizer()
 
 CACHE_DIR = "cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
