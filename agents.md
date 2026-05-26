@@ -14,6 +14,7 @@ A simple, lightweight web application designed to parse and display vocabulary b
 - **Global Example Search**: Option to search through all available examples in the library to find additional context for each word.
 - **Add New Words**: Manually add new words to the library directly from the UI.
 - **Book Management**: Toggle a book list view to include or exclude specific books from the vocabulary list and examples.
+- **Anki Integration**: Sync with local Anki decks via AnkiConnect to hide known words and copy audio tags directly to Anki.
 
 ## Technical Stack
 - **HTML5/CSS3**: Responsive two-column layout for word list and dictionary view.
