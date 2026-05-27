@@ -47,6 +47,7 @@ let currentCardData = {
     definitions: [],
     bookExamples: []
 };
+let savedScrollPosition = 0;
 
 fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -547,8 +548,8 @@ function renderWords(words) {
                                 <div class="example-item">
                                     ${highlightWord(ctx.ctx_title, allVariations)}
                                     <div class="example-actions anki-only">
-                                        <button class="ex-action-btn" onclick="event.stopPropagation(); addExampleToField('${wordKey.replace(/'/g, "\\'")}', ${idx}, 'context')">context</button>
-                                        <button class="ex-action-btn" onclick="event.stopPropagation(); addExampleToField('${wordKey.replace(/'/g, "\\'")}', ${idx}, 'back')">back</button>
+                                        <button class="ex-action-btn" onclick="event.stopPropagation(); addExampleToField(this, 'context')">context</button>
+                                        <button class="ex-action-btn" onclick="event.stopPropagation(); addExampleToField(this, 'back')">back</button>
                                     </div>
                                 </div>
                             `).join('')}
@@ -829,7 +830,10 @@ async function copyExamplesAsHtml(btn, word) {
     // Replace <mark class="highlight">...</mark> with <b>...</b> for the clipboard
     const items = Array.from(exampleList.querySelectorAll('.example-item'))
         .map(item => {
-            let content = item.innerHTML;
+            const clone = item.cloneNode(true);
+            const actions = clone.querySelector('.example-actions');
+            if (actions) actions.remove();
+            let content = clone.innerHTML.trim();
             content = content.replace(/<mark class="highlight">(.*?)<\/mark>/gi, '<b>$1</b>');
             return `<li style="text-align: left;">${content}</li>`;
         })
@@ -938,6 +942,9 @@ async function copyAllDefinitionsAsHtml(btn) {
 }
 
 function enterAnkiMode(wordKey) {
+    // Save current scroll position before entering Anki mode
+    savedScrollPosition = window.scrollY;
+
     isAnkiMode = true;
     currentWord = wordKey;
     currentCardData = {
@@ -976,6 +983,12 @@ function exitAnkiMode() {
     activeWordContainer.innerHTML = '';
     updatePreview();
     filterAndRender();
+
+    // Restore scroll position after exiting Anki mode
+    // Use a small timeout to ensure rendering is complete
+    setTimeout(() => {
+        window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
+    }, 0);
 }
 
 function updatePreview() {
@@ -1008,14 +1021,18 @@ function addDefinitionToCard(index) {
     updatePreview();
 }
 
-function addExampleToField(wordKey, exampleIdx, field) {
-    const word = allWords.find(w => w.data.word_key === wordKey);
-    if (!word || !word.ctxs[exampleIdx]) return;
+function addExampleToField(btn, field) {
+    const exampleItem = btn.closest('.example-item');
+    if (!exampleItem) return;
+
+    // Get the text, but we need to remove the actions div
+    const clone = exampleItem.cloneNode(true);
+    const actions = clone.querySelector('.example-actions');
+    if (actions) actions.remove();
     
-    let example = word.ctxs[exampleIdx].ctx_title;
-    // Highlight word in example
-    const variations = word.variations ? Array.from(word.variations) : [wordKey];
-    example = highlightWord(example, variations).replace(/<mark class="highlight">(.*?)<\/mark>/gi, '<b>$1</b>');
+    let example = clone.innerHTML.trim();
+    // Convert <mark> to <b>
+    example = example.replace(/<mark class="highlight">(.*?)<\/mark>/gi, '<b>$1</b>');
 
     if (field === 'context') {
         currentCardData.context = example;
@@ -1033,31 +1050,52 @@ async function addCardToAnki() {
         return;
     }
 
-    const note = {
-        deckName: deckName,
-        modelName: "Basic",
-        fields: {
-            "Name": currentCardData.name,
-            "Сontext": currentCardData.context,
-            "Back": previewBack.innerHTML
-        },
-        options: {
-            allowDuplicate: true
-        },
-        tags: ["readera"]
-    };
-
     try {
         const models = await invokeAnki('modelNames');
         let modelName = models.find(m => m === "ReadEra") || models[0];
-        note.modelName = modelName;
+
+        // Get model field names to ensure we are using the correct ones
+        const modelFields = await invokeAnki('modelFieldNames', { modelName });
+        const fields = {};
+        
+        // Map our data to whatever fields the user has, prioritizing exact matches
+        const fieldMapping = {
+            "Name": ["Name", "Word", "Front", "Text"],
+            "Context": ["Context", "Sentence", "Example"],
+            "Back": ["Back", "Definition", "Meaning"]
+        };
+
+        for (const [ourField, possibleNames] of Object.entries(fieldMapping)) {
+            const actualName = modelFields.find(f =>
+                f === ourField || possibleNames.includes(f)
+            );
+            if (actualName) {
+                fields[actualName] = ourField === "Back" ? previewBack.innerHTML : currentCardData[ourField.toLowerCase()];
+            }
+        }
+
+        // If we couldn't map fields automatically, fallback to positional mapping for the first 3 fields
+        if (Object.keys(fields).length === 0 || !fields[modelFields[0]]) {
+            if (modelFields[0]) fields[modelFields[0]] = currentCardData.name;
+            if (modelFields[1]) fields[modelFields[1]] = currentCardData.context;
+            if (modelFields[2]) fields[modelFields[2]] = previewBack.innerHTML;
+        }
+
+        const note = {
+            deckName: deckName,
+            modelName: modelName,
+            fields: fields,
+            options: {
+                allowDuplicate: true
+            },
+            tags: ["readera"]
+        };
 
         await invokeAnki('addNote', { note });
-        alert('Card added successfully!');
         exitAnkiMode();
     } catch (err) {
         console.error('Failed to add card:', err);
-        alert('Failed to add card: ' + err.message + '\nMake sure you have a model with fields: Name, Сontext, Back');
+        alert('Failed to add card: ' + err.message + '\nMake sure you have a model with fields: Name, Context, Back');
     }
 }
 
