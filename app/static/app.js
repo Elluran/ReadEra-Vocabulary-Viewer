@@ -404,6 +404,20 @@ function filterAndRender() {
     }
 }
 
+function updateAnkiModeUI() {
+    if (isAnkiMode) {
+        document.body.classList.add('anki-mode-on');
+        ankiCardMode.style.display = 'block';
+        ankiModeBar.style.display = 'block';
+        ankiCardPreview.style.display = 'block';
+    } else {
+        document.body.classList.remove('anki-mode-on');
+        ankiCardMode.style.display = 'none';
+        ankiModeBar.style.display = 'none';
+        ankiCardPreview.style.display = 'none';
+    }
+}
+
 function updateCounter(filteredCount, totalCount) {
     if (!wordCounter) return;
     if (filteredCount === totalCount) {
@@ -996,7 +1010,7 @@ function enterAnkiMode(wordKey) {
     }
 
     updatePreview();
-    filterAndRender();
+    updateAnkiModeUI();
     
     // Move the active word element to the right column
     const activeWordEl = document.querySelector(`.word-item[data-word="${wordKey.replace(/'/g, "\\'")}"]`);
@@ -1017,7 +1031,7 @@ function exitAnkiMode() {
     currentCardData = { name: '', context: '', back: '', definitions: [], bookExamples: [] };
     activeWordContainer.innerHTML = '';
     updatePreview();
-    filterAndRender();
+    updateAnkiModeUI();
 
     // Restore scroll position after exiting Anki mode
     // Use a small timeout to ensure rendering is complete
