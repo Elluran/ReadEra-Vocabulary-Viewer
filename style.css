@@ -884,7 +884,7 @@ input[type="file"] {
     display: none;
 }
 
-.anki-editor-enabled .anki-mode-on .anki-only {
+.anki-editor-enabled.anki-mode-on .anki-only {
     display: inline-flex;
 }
 
@@ -894,7 +894,7 @@ input[type="file"] {
     margin-top: 5px;
 }
 
-.anki-mode-on .example-actions {
+.anki-editor-enabled.anki-mode-on .example-actions {
     display: flex;
 }
 
