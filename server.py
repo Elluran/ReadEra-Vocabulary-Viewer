@@ -29,6 +29,27 @@ except LookupError:
 CACHE_DIR = "cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
+CONFIG_PATH = "config.toml"
+
+def save_config(config: Config):
+    """Save Config object to config.toml."""
+    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+        f.write('[options]\n')
+        for key, value in config.options.model_dump().items():
+            if isinstance(value, bool):
+                f.write(f'{key} = {"true" if value else "false"}\n')
+            elif isinstance(value, (int, float)):
+                f.write(f'{key} = {value}\n')
+            else:
+                f.write(f'{key} = "{value}"\n')
+
+def ensure_config_exists():
+    """Check if config.toml exists, if not create it with default values."""
+    if not os.path.exists(CONFIG_PATH):
+        print(f"{CONFIG_PATH} not found. Creating with default values...")
+        config = Config()
+        save_config(config)
+
 def get_cache_path(word, dictionary="cambridge"):
     hash_name = hashlib.md5(f"{dictionary}_{word.lower()}".encode()).hexdigest()
     return os.path.join(CACHE_DIR, f"{hash_name}.json")
@@ -596,17 +617,7 @@ class DictionaryHandler(BaseHTTPRequestHandler):
                 config = Config(options=options)
                 
                 # Save to config.toml
-                # Since tomllib is read-only, we'll manually write the TOML
-                with open('config.toml', 'w', encoding='utf-8') as f:
-                    f.write('[options]\n')
-                    # config.options is an OptionsConfig object, use model_dump() to get a dict
-                    for key, value in config.options.model_dump().items():
-                        if isinstance(value, bool):
-                            f.write(f'{key} = {"true" if value else "false"}\n')
-                        elif isinstance(value, (int, float)):
-                            f.write(f'{key} = {value}\n')
-                        else:
-                            f.write(f'{key} = "{value}"\n')
+                save_config(config)
 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
@@ -671,10 +682,9 @@ class DictionaryHandler(BaseHTTPRequestHandler):
             else:
                 self.send_error(400, "URL parameter missing")
         elif path == '/api/config':
-            config_path = 'config.toml'
-            if os.path.exists(config_path):
+            if os.path.exists(CONFIG_PATH):
                 try:
-                    with open(config_path, 'rb') as f:
+                    with open(CONFIG_PATH, 'rb') as f:
                         config_data = tomllib.load(f)
                     
                     # Validate with Pydantic
@@ -723,4 +733,5 @@ def run(server_class=ThreadedHTTPServer, handler_class=DictionaryHandler, port=8
     httpd.serve_forever()
 
 if __name__ == "__main__":
+    ensure_config_exists()
     run()
