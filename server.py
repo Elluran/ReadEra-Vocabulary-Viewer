@@ -585,6 +585,36 @@ class DictionaryHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"status": "success"}).encode())
             except Exception as e:
                 self.send_error(500, f"Internal server error: {e}")
+        elif path == '/api/config':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data)
+                options = data.get('options', {})
+                
+                # Validate with Pydantic
+                config = Config(options=options)
+                
+                # Save to config.toml
+                # Since tomllib is read-only, we'll manually write the TOML
+                with open('config.toml', 'w', encoding='utf-8') as f:
+                    f.write('[options]\n')
+                    # config.options is an OptionsConfig object, use model_dump() to get a dict
+                    for key, value in config.options.model_dump().items():
+                        if isinstance(value, bool):
+                            f.write(f'{key} = {"true" if value else "false"}\n')
+                        elif isinstance(value, (int, float)):
+                            f.write(f'{key} = {value}\n')
+                        else:
+                            f.write(f'{key} = "{value}"\n')
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success"}).encode())
+            except Exception as e:
+                self.send_error(500, f"Internal server error: {e}")
         else:
             self.send_error(404)
 

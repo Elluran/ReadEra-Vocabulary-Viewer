@@ -48,6 +48,7 @@ let currentCardData = {
     bookExamples: []
 };
 let savedScrollPosition = 0;
+let config = { options: {} };
 
 fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -199,6 +200,14 @@ cancelAnkiBtn.addEventListener('click', () => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isAnkiMode) {
         exitAnkiMode();
+    }
+});
+
+window.addEventListener('configChanged', (e) => {
+    const { key, value } = e.detail;
+    if (key === 'enable_anki_cards_editor') {
+        config.options.enable_anki_cards_editor = value;
+        applyConfig();
     }
 });
 
@@ -562,11 +571,12 @@ function renderWords(words) {
         wordDiv.innerHTML = `
             <div class="word-header">
                 <div class="word-title-group">
-                    <h2 class="word-title">
-                        ${word.data.word_key}
+                    <div class="word-title-row">
+                        <h2 class="word-title">${word.data.word_key}</h2>
                         ${variations.length > 0 ? `<span class="variations">(${variations.join(', ')})</span>` : ''}
-                    </h2>
-                    <button class="make-card-btn" onclick="event.stopPropagation(); enterAnkiMode('${wordKey.replace(/'/g, "\\'")}')">make a card</button>
+                        <button class="make-card-btn" onclick="event.stopPropagation(); enterAnkiMode('${wordKey.replace(/'/g, "\\'")}')">make a card</button>
+                    </div>
+                    ${variations.length > 0 ? `<div class="variations">(${variations.join(', ')})</div>` : ''}
                 </div>
                 <span class="book-title">${bookTitle}</span>
             </div>
@@ -1164,7 +1174,30 @@ async function loadFrequencyData() {
     }
 }
 
+function applyConfig() {
+    const enableAnki = config.options.enable_anki_cards_editor;
+    
+    if (enableAnki) {
+        document.body.classList.add('anki-editor-enabled');
+    } else {
+        document.body.classList.remove('anki-editor-enabled');
+        if (isAnkiMode) {
+            exitAnkiMode();
+        }
+    }
+}
+
 async function init() {
+    // Fetch config from server
+    try {
+        const response = await fetch('/api/config');
+        if (response.ok) {
+            config = await response.json();
+        }
+    } catch (err) {
+        console.error('Failed to fetch config:', err);
+    }
+
     // Load saved options
     const savedSort = localStorage.getItem('sortOption');
     if (savedSort) sortSelect.value = savedSort;
@@ -1198,6 +1231,8 @@ async function init() {
         loadLibrary(lastFile),
         syncWithAnki()
     ]);
+
+    applyConfig();
 }
 
 init();

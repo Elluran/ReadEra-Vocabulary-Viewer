@@ -55,10 +55,13 @@ class OptionsManager {
             `;
             
             const checkbox = optionItem.querySelector('input');
-            checkbox.addEventListener('change', () => {
+            checkbox.addEventListener('change', async () => {
                 this.configOptions[key] = checkbox.checked;
-                // In a real app, we might want to save this back to the server
+                await this.saveConfig();
                 console.log(`Option ${key} changed to ${checkbox.checked}`);
+                
+                // Dispatch event so other parts of the app can react
+                window.dispatchEvent(new CustomEvent('configChanged', { detail: { key, value: checkbox.checked } }));
             });
             
             this.optionsList.appendChild(optionItem);
@@ -71,6 +74,20 @@ class OptionsManager {
 
     getOption(key) {
         return this.configOptions[key];
+    }
+
+    async saveConfig() {
+        try {
+            const response = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ options: this.configOptions })
+            });
+            if (!response.ok) throw new Error('Failed to save config');
+        } catch (err) {
+            console.error('Error saving config:', err);
+            alert('Failed to save configuration');
+        }
     }
 }
 

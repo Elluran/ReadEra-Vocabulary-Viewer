@@ -238,16 +238,35 @@ h1 {
     font-weight: bold;
     color: #e67e22;
     margin: 0;
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    flex-wrap: wrap;
 }
 
 .word-title-group {
     display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.word-title-row {
+    display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 8px;
+}
+
+.word-title-row .variations {
+    display: none;
+}
+
+.word-item:not(.active) .word-title-row .variations {
+    display: inline;
+}
+
+.anki-editor-enabled .word-item.active .word-title-row .variations {
+    display: none;
+}
+
+/* If anki editor is disabled, always show variations in the row */
+body:not(.anki-editor-enabled) .word-title-row .variations {
+    display: inline;
 }
 
 .variations {
@@ -255,6 +274,14 @@ h1 {
     color: #7f8c8d;
     font-weight: normal;
     font-style: italic;
+}
+
+.word-title-group > .variations {
+    display: none;
+}
+
+.anki-editor-enabled .word-item.active .word-title-group > .variations {
+    display: block;
 }
 
 .book-title {
@@ -794,7 +821,7 @@ input[type="file"] {
     background: none;
 }
 
-.word-item.active .make-card-btn {
+.anki-editor-enabled .word-item.active .make-card-btn {
     display: inline-block;
 }
 
@@ -857,7 +884,7 @@ input[type="file"] {
     display: none;
 }
 
-.anki-mode-on .anki-only {
+.anki-editor-enabled .anki-mode-on .anki-only {
     display: inline-flex;
 }
 
