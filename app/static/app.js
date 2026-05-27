@@ -19,18 +19,6 @@ const dictTabs = document.querySelectorAll('.dict-tab');
 const wordCounter = document.getElementById('wordCounter');
 const toggleBookListBtn = document.getElementById('toggleBookListBtn');
 
-// Anki Card Mode Elements
-const ankiCardMode = document.getElementById('ankiCardMode');
-const ankiModeBar = document.getElementById('ankiModeBar');
-const ankiCardPreview = document.getElementById('ankiCardPreview');
-const activeWordContainer = document.getElementById('activeWordContainer');
-const deckSelect = document.getElementById('deckSelect');
-const addCardBtn = document.getElementById('addCardBtn');
-const cancelAnkiBtn = document.getElementById('cancelAnkiBtn');
-const previewName = document.getElementById('previewName');
-const previewContext = document.getElementById('previewContext');
-const previewBack = document.getElementById('previewBack');
-
 let lemmaMap = {}; // original_word -> lemma
 let currentWord = null;
 let currentDictionary = 'cambridge';
@@ -39,15 +27,6 @@ let searchTimeout = null;
 let excludedBooks = new Set();
 let isBookListView = false;
 let searchExcludedBooks = false;
-let isAnkiMode = false;
-let currentCardData = {
-    name: '',
-    context: '',
-    back: '',
-    definitions: [],
-    bookExamples: []
-};
-let savedScrollPosition = 0;
 let config = { options: {}, dictionaries: {} };
 
 fileInput.addEventListener('change', (e) => {
@@ -189,20 +168,6 @@ toggleBookListBtn.addEventListener('click', () => {
     filterAndRender();
 });
 
-addCardBtn.addEventListener('click', async () => {
-    await addCardToAnki();
-});
-
-cancelAnkiBtn.addEventListener('click', () => {
-    exitAnkiMode();
-});
-
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isAnkiMode) {
-        exitAnkiMode();
-    }
-});
-
 window.addEventListener('configChanged', (e) => {
     const { section, key, value } = e.detail;
     if (section === 'options' && key === 'enable_anki_cards_editor') {
@@ -214,7 +179,7 @@ window.addEventListener('configChanged', (e) => {
     }
 });
 
-async function invokeAnki(action, params = {}) {
+window.invokeAnki = async function(action, params = {}) {
     try {
         const response = await fetch('http://localhost:8765', {
             method: 'POST',
@@ -262,13 +227,16 @@ async function syncWithAnki() {
         // Fetch decks for the selector
         const decks = await invokeAnki('deckNames');
         const currentDeck = localStorage.getItem('selectedAnkiDeck');
-        deckSelect.innerHTML = decks.map(deck => 
-            `<option value="${deck}" ${deck === currentDeck ? 'selected' : ''}>${deck}</option>`
-        ).join('');
-        
-        deckSelect.addEventListener('change', () => {
-            localStorage.setItem('selectedAnkiDeck', deckSelect.value);
-        });
+        const deckSelect = document.getElementById('deckSelect');
+        if (deckSelect) {
+            deckSelect.innerHTML = decks.map(deck =>
+                `<option value="${deck}" ${deck === currentDeck ? 'selected' : ''}>${deck}</option>`
+            ).join('');
+            
+            deckSelect.addEventListener('change', () => {
+                localStorage.setItem('selectedAnkiDeck', deckSelect.value);
+            });
+        }
 
         if (hideAnkiToggle.checked) {
             filterAndRender();
@@ -391,30 +359,8 @@ function filterAndRender() {
     renderWords(filtered);
     updateCounter(filtered.length, processedWords.length);
     
-    if (isAnkiMode) {
-        document.body.classList.add('anki-mode-on');
-        ankiCardMode.style.display = 'block';
-        ankiModeBar.style.display = 'block';
-        ankiCardPreview.style.display = 'block';
-    } else {
-        document.body.classList.remove('anki-mode-on');
-        ankiCardMode.style.display = 'none';
-        ankiModeBar.style.display = 'none';
-        ankiCardPreview.style.display = 'none';
-    }
-}
-
-function updateAnkiModeUI() {
-    if (isAnkiMode) {
-        document.body.classList.add('anki-mode-on');
-        ankiCardMode.style.display = 'block';
-        ankiModeBar.style.display = 'block';
-        ankiCardPreview.style.display = 'block';
-    } else {
-        document.body.classList.remove('anki-mode-on');
-        ankiCardMode.style.display = 'none';
-        ankiModeBar.style.display = 'none';
-        ankiCardPreview.style.display = 'none';
+    if (window.ankiEditor) {
+        window.ankiEditor.updateAnkiModeUI();
     }
 }
 
@@ -563,7 +509,7 @@ function renderWords(words) {
         let examplesHtml = '';
         if (word.ctxs && word.ctxs.length > 0) {
             examplesHtml = `
-                <details class="example-spoiler" ${isAnkiMode ? 'open' : ''}>
+                <details class="example-spoiler" ${(window.ankiEditor && window.ankiEditor.isAnkiMode) ? 'open' : ''}>
                     <summary>Show Examples (${word.ctxs.length})</summary>
                     <div class="example-list-container">
                         <button class="copy-examples-btn" onclick="event.stopPropagation(); copyExamplesAsHtml(this, '${wordKey.replace(/'/g, "\\'")}')">
@@ -574,8 +520,8 @@ function renderWords(words) {
                                 <div class="example-item">
                                     ${highlightWord(ctx.ctx_title, allVariations)}
                                     <div class="example-actions anki-only">
-                                        <button class="ex-action-btn" onclick="event.stopPropagation(); addExampleToField(this, 'context')">context</button>
-                                        <button class="ex-action-btn" onclick="event.stopPropagation(); addExampleToField(this, 'back')">back</button>
+                                        <button class="ex-action-btn" onclick="event.stopPropagation(); window.ankiEditor.addExampleToField(this, 'context')">context</button>
+                                        <button class="ex-action-btn" onclick="event.stopPropagation(); window.ankiEditor.addExampleToField(this, 'back')">back</button>
                                     </div>
                                 </div>
                             `).join('')}
@@ -591,7 +537,7 @@ function renderWords(words) {
                     <div class="word-title-row">
                         <h2 class="word-title">${word.data.word_key}</h2>
                         ${variations.length > 0 ? `<span class="variations">(${variations.join(', ')})</span>` : ''}
-                        <button class="make-card-btn" onclick="event.stopPropagation(); enterAnkiMode('${wordKey.replace(/'/g, "\\'")}')">make a card</button>
+                        <button class="make-card-btn" onclick="event.stopPropagation(); window.ankiEditor.enterAnkiMode('${wordKey.replace(/'/g, "\\'")}', lastFetchedData)">make a card</button>
                     </div>
                     ${variations.length > 0 ? `<div class="variations">(${variations.join(', ')})</div>` : ''}
                 </div>
@@ -737,7 +683,7 @@ function renderDefinition(data) {
                         <button class="copy-def-btn" onclick="copyDefinitionAsHtml(this, ${index})">
                             Copy
                         </button>
-                        <button class="add-to-card-btn anki-only" onclick="addDefinitionToCard(${index})">
+                        <button class="add-to-card-btn anki-only" onclick="window.ankiEditor.addDefinitionToCard(lastFetchedData.definitions[${index}])">
                             add
                         </button>
                     </div>
@@ -785,7 +731,7 @@ async function copyAudioToClipboard(url, btn) {
                 const filename = 'readera_' + absoluteUrl.split('/').pop().replace(/[^a-zA-Z0-9.-]/g, '_');
                 
                 // Try to store the file in Anki via AnkiConnect
-                await invokeAnki('storeMediaFile', {
+                await window.invokeAnki('storeMediaFile', {
                     filename: filename,
                     url: absoluteUrl
                 });
@@ -925,34 +871,15 @@ function renderCurrentDefinition() {
         renderDefinition(data);
         
         // If in Anki mode and back is empty, auto-populate transcription/audio
-        if (isAnkiMode && !currentCardData.back) {
-            populateAnkiBack(data);
+        if (window.ankiEditor && window.ankiEditor.isAnkiMode && !window.ankiEditor.currentCardData.back) {
+            window.ankiEditor.populateAnkiBack(data);
         }
     } else {
         dictionaryView.innerHTML = `<div class="dictionary-placeholder"><p>Loading ${currentDictionary === 'cambridge' ? 'Cambridge' : 'Merriam-Webster'} definition for "${currentWord}"...</p></div>`;
     }
 }
 
-function populateAnkiBack(data) {
-    const ukPron = data.pronunciations.find(p => p.region === 'UK') || data.pronunciations[0];
-    if (ukPron) {
-        let backContent = '';
-        if (ukPron.ipa) backContent += `/${ukPron.ipa}/ `;
-        if (ukPron.audio) {
-            const filename = 'readera_' + ukPron.audio.split('/').pop().replace(/[^a-zA-Z0-9.-]/g, '_');
-            backContent += `[sound:${filename}]`;
-            // Pre-store audio in Anki
-            invokeAnki('storeMediaFile', {
-                filename: filename,
-                url: ukPron.audio
-            }).catch(console.error);
-        }
-        currentCardData.back = backContent;
-        updatePreview();
-    }
-}
-
-function formatDefinitionHtml(entry, forPreview = false) {
+window.formatDefinitionHtml = function(entry, forPreview = false) {
     const posHtml = entry.part_of_speech && entry.part_of_speech !== 'NOT SPECIFIED'
         ? `<b style="color: #2980b9;">${entry.part_of_speech.toLowerCase()}</b> `
         : '';
@@ -990,203 +917,9 @@ async function copyAllDefinitionsAsHtml(btn) {
     await copyToClipboard(html, btn);
 }
 
-function enterAnkiMode(wordKey) {
-    // Save current scroll position before entering Anki mode
-    savedScrollPosition = window.scrollY;
-
-    isAnkiMode = true;
-    currentWord = wordKey;
-    currentCardData = {
-        name: wordKey,
-        context: '',
-        back: '',
-        definitions: [], // Array of { html, previewHtml }
-        bookExamples: []
-    };
-    
-    // Auto-add transcription and audio if available
-    if (lastFetchedData && lastFetchedData.word.toLowerCase() === wordKey.toLowerCase()) {
-        populateAnkiBack(lastFetchedData);
-    }
-
-    updatePreview();
-    updateAnkiModeUI();
-    
-    // Move the active word element to the right column
-    const activeWordEl = document.querySelector(`.word-item[data-word="${wordKey.replace(/'/g, "\\'")}"]`);
-    if (activeWordEl) {
-        activeWordContainer.innerHTML = '';
-        const clone = activeWordEl.cloneNode(true);
-        activeWordContainer.appendChild(clone);
-    }
-
-    fetchDefinition(wordKey);
-    
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function exitAnkiMode() {
-    isAnkiMode = false;
-    currentCardData = { name: '', context: '', back: '', definitions: [], bookExamples: [] };
-    activeWordContainer.innerHTML = '';
-    updatePreview();
-    updateAnkiModeUI();
-
-    // Restore scroll position after exiting Anki mode
-    // Use a small timeout to ensure rendering is complete
-    setTimeout(() => {
-        window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
-    }, 0);
-}
-
-function updatePreview() {
-    previewName.innerHTML = currentCardData.name;
-    previewContext.innerHTML = currentCardData.context;
-    
-    // Combine definitions and book examples, ensuring examples are at the bottom
-    let backHtml = currentCardData.back; // This contains transcription/audio
-    if (currentCardData.definitions.length > 0) {
-        if (backHtml) backHtml += '\n';
-        // Use preview-specific HTML for the preview pane
-        backHtml += currentCardData.definitions.map(d => d.previewHtml).join('\n');
-    }
-    if (currentCardData.bookExamples.length > 0) {
-        backHtml += '<hr>\n<ul style="text-align: left;">\n';
-        backHtml += currentCardData.bookExamples.map(ex => `<li>${ex}</li>`).join('\n');
-        backHtml += '\n</ul>';
-    }
-    
-    previewBack.innerHTML = backHtml;
-}
-
-function addDefinitionToCard(index) {
-    if (!lastFetchedData || !lastFetchedData.definitions[index]) return;
-    const entry = lastFetchedData.definitions[index];
-    const html = formatDefinitionHtml(entry);
-    const previewHtml = formatDefinitionHtml(entry, true);
-    
-    if (currentCardData.definitions.some(d => d.html === html)) return;
-    
-    // Store images in Anki if present
-    if (entry.images && entry.images.length > 0) {
-        entry.images.forEach(img => {
-            const filename = 'readera_' + img.split('/').pop().replace(/[^a-zA-Z0-9.-]/g, '_');
-            invokeAnki('storeMediaFile', {
-                filename: filename,
-                url: img
-            }).catch(err => console.error('Failed to store image in Anki:', err));
-        });
-    }
-    
-    currentCardData.definitions.push({ html, previewHtml });
-    updatePreview();
-}
-
-function addExampleToField(btn, field) {
-    const exampleItem = btn.closest('.example-item');
-    if (!exampleItem) return;
-
-    // Get the text, but we need to remove the actions div
-    const clone = exampleItem.cloneNode(true);
-    const actions = clone.querySelector('.example-actions');
-    if (actions) actions.remove();
-    
-    let example = clone.innerHTML.trim();
-    // Convert <mark> to <b>
-    example = example.replace(/<mark class="highlight">(.*?)<\/mark>/gi, '<b>$1</b>');
-
-    if (field === 'context') {
-        currentCardData.context = example;
-    } else if (field === 'back') {
-        if (currentCardData.bookExamples.includes(example)) return;
-        currentCardData.bookExamples.push(example);
-    }
-    updatePreview();
-}
-
-async function addCardToAnki() {
-    const deckName = deckSelect.value;
-    if (!deckName) {
-        alert('Please select a deck');
-        return;
-    }
-
-    try {
-        const models = await invokeAnki('modelNames');
-        let modelName = models.find(m => m === "ReadEra") || models[0];
-
-        // Get model field names to ensure we are using the correct ones
-        const modelFields = await invokeAnki('modelFieldNames', { modelName });
-        const fields = {};
-        
-        // Map our data to whatever fields the user has, prioritizing exact matches
-        const fieldMapping = {
-            "Name": ["Name", "Word", "Front", "Text"],
-            "Context": ["Context", "Sentence", "Example"],
-            "Back": ["Back", "Definition", "Meaning"]
-        };
-
-        for (const [ourField, possibleNames] of Object.entries(fieldMapping)) {
-            const actualName = modelFields.find(f =>
-                f === ourField || possibleNames.includes(f)
-            );
-            if (actualName) {
-                if (ourField === "Back") {
-                    // Combine transcription/audio with the actual card HTML (not preview HTML)
-                    let backHtml = currentCardData.back;
-                    if (currentCardData.definitions.length > 0) {
-                        if (backHtml) backHtml += '\n';
-                        backHtml += currentCardData.definitions.map(d => d.html).join('\n');
-                    }
-                    if (currentCardData.bookExamples.length > 0) {
-                        backHtml += '<hr>\n<ul style="text-align: left;">\n';
-                        backHtml += currentCardData.bookExamples.map(ex => `<li>${ex}</li>`).join('\n');
-                        backHtml += '\n</ul>';
-                    }
-                    fields[actualName] = backHtml;
-                } else {
-                    fields[actualName] = currentCardData[ourField.toLowerCase()];
-                }
-            }
-        }
-
-        // If we couldn't map fields automatically, fallback to positional mapping for the first 3 fields
-        if (Object.keys(fields).length === 0 || !fields[modelFields[0]]) {
-            if (modelFields[0]) fields[modelFields[0]] = currentCardData.name;
-            if (modelFields[1]) fields[modelFields[1]] = currentCardData.context;
-            if (modelFields[2]) {
-                let backHtml = currentCardData.back;
-                if (currentCardData.definitions.length > 0) {
-                    if (backHtml) backHtml += '\n';
-                    backHtml += currentCardData.definitions.map(d => d.html).join('\n');
-                }
-                if (currentCardData.bookExamples.length > 0) {
-                    backHtml += '<hr>\n<ul style="text-align: left;">\n';
-                    backHtml += currentCardData.bookExamples.map(ex => `<li>${ex}</li>`).join('\n');
-                    backHtml += '\n</ul>';
-                }
-                fields[modelFields[2]] = backHtml;
-            }
-        }
-
-        const note = {
-            deckName: deckName,
-            modelName: modelName,
-            fields: fields,
-            options: {
-                allowDuplicate: true
-            },
-            tags: ["readera"]
-        };
-
-        await invokeAnki('addNote', { note });
-        exitAnkiMode();
-    } catch (err) {
-        console.error('Failed to add card:', err);
-        alert('Failed to add card: ' + err.message + '\nMake sure you have a model with fields: Name, Context, Back');
-    }
-}
+window.addEventListener('ankiModeEntered', (e) => {
+    fetchDefinition(e.detail.wordKey);
+});
 
 // Load frequency data on startup
 async function loadFrequencyData() {
@@ -1208,8 +941,8 @@ function applyConfig() {
         document.body.classList.add('anki-editor-enabled');
     } else {
         document.body.classList.remove('anki-editor-enabled');
-        if (isAnkiMode) {
-            exitAnkiMode();
+        if (window.ankiEditor && window.ankiEditor.isAnkiMode) {
+            window.ankiEditor.exitAnkiMode();
         }
     }
 
