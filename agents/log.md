@@ -160,3 +160,9 @@
     - Implemented `copyAudioToClipboard` in `app.js` to fetch audio via proxy and copy it as a binary Blob to the clipboard.
     - Updated `style.css` to reflect the change from download to copy functionality.
     - Updated `agents.md` to reflect the new audio handling feature.
+
+## 2026-05-27
+- **Code Refactoring**:
+    - Separated rendering logic from `app.js` into a new dedicated [`renderer.js`](app/static/renderer.js).
+    - Created a `Renderer` object to handle DOM updates for word lists, book management, and dictionary definitions.
+    - Cleaned up `app.js` to focus on state management and event handling, delegating UI updates to the `Renderer`.
