@@ -21,6 +21,7 @@ const toggleBookListBtn = document.getElementById('toggleBookListBtn');
 
 // Anki Card Mode Elements
 const ankiCardMode = document.getElementById('ankiCardMode');
+const ankiModeBar = document.getElementById('ankiModeBar');
 const ankiCardPreview = document.getElementById('ankiCardPreview');
 const activeWordContainer = document.getElementById('activeWordContainer');
 const deckSelect = document.getElementById('deckSelect');
@@ -380,10 +381,12 @@ function filterAndRender() {
     if (isAnkiMode) {
         document.body.classList.add('anki-mode-on');
         ankiCardMode.style.display = 'block';
+        ankiModeBar.style.display = 'block';
         ankiCardPreview.style.display = 'block';
     } else {
         document.body.classList.remove('anki-mode-on');
         ankiCardMode.style.display = 'none';
+        ankiModeBar.style.display = 'none';
         ankiCardPreview.style.display = 'none';
     }
 }

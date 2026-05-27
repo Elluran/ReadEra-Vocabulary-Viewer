@@ -57,6 +57,19 @@
                 </button>
             </div>
         </header>
+        <div id="ankiModeBar" class="anki-mode-bar" style="display: none;">
+            <hr class="anki-bar-hr">
+            <div class="anki-bar-content">
+                <div class="deck-selector-container">
+                    <label for="deckSelect">Deck:</label>
+                    <select id="deckSelect"></select>
+                </div>
+                <div class="anki-bar-actions">
+                    <button id="addCardBtn" class="primary-btn">Add</button>
+                    <button id="cancelAnkiBtn" class="secondary-btn">Back</button>
+                </div>
+            </div>
+        </div>
         <div class="content-wrapper">
             <div id="ankiCardPreview" class="anki-card-preview-left" style="display: none;">
                 <h3>Card Preview</h3>
@@ -80,16 +93,6 @@
             </main>
             <aside id="dictionaryContainer">
                 <div id="ankiCardMode" class="anki-card-mode-right" style="display: none;">
-                    <div class="anki-card-controls">
-                        <div class="deck-selector-container">
-                            <label for="deckSelect">Deck:</label>
-                            <select id="deckSelect"></select>
-                        </div>
-                        <div class="anki-mode-actions">
-                            <button id="addCardBtn" class="primary-btn">Add</button>
-                            <button id="cancelAnkiBtn" class="secondary-btn">Back</button>
-                        </div>
-                    </div>
                     <div id="activeWordContainer" class="active-word-container"></div>
                 </div>
                 <div class="dict-tabs">
