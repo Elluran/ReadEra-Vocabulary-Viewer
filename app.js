@@ -915,7 +915,7 @@ function populateAnkiBack(data) {
     }
 }
 
-function formatDefinitionHtml(entry) {
+function formatDefinitionHtml(entry, forPreview = false) {
     const posHtml = entry.part_of_speech && entry.part_of_speech !== 'NOT SPECIFIED'
         ? `<b style="color: #2980b9;">${entry.part_of_speech.toLowerCase()}</b> `
         : '';
@@ -923,7 +923,19 @@ function formatDefinitionHtml(entry) {
         ? `<i style="color: #666;">(${entry.labels.join(', ')})</i> `
         : '';
     const examples = entry.examples.map(ex => `<li style="text-align: left;">${ex}</li>`).join('\n');
-    return `<div>\n<div style="text-align: left;">${posHtml}${labelsHtml}<b>${entry.description}</b></div>\n<ul style="text-align: left;">\n${examples}\n</ul>\n</div>`;
+    let imagesHtml = '';
+    if (entry.images && entry.images.length > 0) {
+        imagesHtml = `<div style="text-align: left; margin-top: 10px;">\n` +
+            entry.images.map(img => {
+                if (forPreview) {
+                    return `<img src="${img}" style="max-width: 100%; height: auto;">`;
+                }
+                const filename = 'readera_' + img.split('/').pop().replace(/[^a-zA-Z0-9.-]/g, '_');
+                return `<img src="${filename}">`;
+            }).join('\n') +
+            `\n</div>\n`;
+    }
+    return `<div>\n<div style="text-align: left;">${posHtml}${labelsHtml}<b>${entry.description}</b></div>\n${imagesHtml}<ul style="text-align: left;">\n${examples}\n</ul>\n</div>`;
 }
 
 async function copyDefinitionAsHtml(btn, index) {
@@ -951,7 +963,7 @@ function enterAnkiMode(wordKey) {
         name: wordKey,
         context: '',
         back: '',
-        definitions: [],
+        definitions: [], // Array of { html, previewHtml }
         bookExamples: []
     };
     
@@ -999,7 +1011,8 @@ function updatePreview() {
     let backHtml = currentCardData.back; // This contains transcription/audio
     if (currentCardData.definitions.length > 0) {
         if (backHtml) backHtml += '\n';
-        backHtml += currentCardData.definitions.join('\n');
+        // Use preview-specific HTML for the preview pane
+        backHtml += currentCardData.definitions.map(d => d.previewHtml).join('\n');
     }
     if (currentCardData.bookExamples.length > 0) {
         backHtml += '<hr>\n<ul style="text-align: left;">\n';
@@ -1014,10 +1027,22 @@ function addDefinitionToCard(index) {
     if (!lastFetchedData || !lastFetchedData.definitions[index]) return;
     const entry = lastFetchedData.definitions[index];
     const html = formatDefinitionHtml(entry);
+    const previewHtml = formatDefinitionHtml(entry, true);
     
-    if (currentCardData.definitions.includes(html)) return;
+    if (currentCardData.definitions.some(d => d.html === html)) return;
     
-    currentCardData.definitions.push(html);
+    // Store images in Anki if present
+    if (entry.images && entry.images.length > 0) {
+        entry.images.forEach(img => {
+            const filename = 'readera_' + img.split('/').pop().replace(/[^a-zA-Z0-9.-]/g, '_');
+            invokeAnki('storeMediaFile', {
+                filename: filename,
+                url: img
+            }).catch(err => console.error('Failed to store image in Anki:', err));
+        });
+    }
+    
+    currentCardData.definitions.push({ html, previewHtml });
     updatePreview();
 }
 
@@ -1070,7 +1095,22 @@ async function addCardToAnki() {
                 f === ourField || possibleNames.includes(f)
             );
             if (actualName) {
-                fields[actualName] = ourField === "Back" ? previewBack.innerHTML : currentCardData[ourField.toLowerCase()];
+                if (ourField === "Back") {
+                    // Combine transcription/audio with the actual card HTML (not preview HTML)
+                    let backHtml = currentCardData.back;
+                    if (currentCardData.definitions.length > 0) {
+                        if (backHtml) backHtml += '\n';
+                        backHtml += currentCardData.definitions.map(d => d.html).join('\n');
+                    }
+                    if (currentCardData.bookExamples.length > 0) {
+                        backHtml += '<hr>\n<ul style="text-align: left;">\n';
+                        backHtml += currentCardData.bookExamples.map(ex => `<li>${ex}</li>`).join('\n');
+                        backHtml += '\n</ul>';
+                    }
+                    fields[actualName] = backHtml;
+                } else {
+                    fields[actualName] = currentCardData[ourField.toLowerCase()];
+                }
             }
         }
 
@@ -1078,7 +1118,19 @@ async function addCardToAnki() {
         if (Object.keys(fields).length === 0 || !fields[modelFields[0]]) {
             if (modelFields[0]) fields[modelFields[0]] = currentCardData.name;
             if (modelFields[1]) fields[modelFields[1]] = currentCardData.context;
-            if (modelFields[2]) fields[modelFields[2]] = previewBack.innerHTML;
+            if (modelFields[2]) {
+                let backHtml = currentCardData.back;
+                if (currentCardData.definitions.length > 0) {
+                    if (backHtml) backHtml += '\n';
+                    backHtml += currentCardData.definitions.map(d => d.html).join('\n');
+                }
+                if (currentCardData.bookExamples.length > 0) {
+                    backHtml += '<hr>\n<ul style="text-align: left;">\n';
+                    backHtml += currentCardData.bookExamples.map(ex => `<li>${ex}</li>`).join('\n');
+                    backHtml += '\n</ul>';
+                }
+                fields[modelFields[2]] = backHtml;
+            }
         }
 
         const note = {

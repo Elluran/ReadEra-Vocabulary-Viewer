@@ -375,7 +375,17 @@ def get_merriam_webster_word_info(word: str):
                         "examples": [],
                         "images": []
                     }
-                    
+
+                    # Extract images for MW
+                    # MW often has images in .art-container or similar
+                    art_container = sense.find("div", class_="art-container")
+                    if art_container:
+                        img = art_container.find("img")
+                        if img:
+                            img_src = img.get("src") or img.get("data-src")
+                            if img_src:
+                                definition_entry["images"].append(urljoin(url, img_src))
+
                     # Labels (sls, labels)
                     labels = sense.select(".sl, .lbl")
                     for l in labels:
