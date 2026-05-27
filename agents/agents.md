@@ -21,3 +21,15 @@ A simple, lightweight web application designed to parse and display vocabulary b
 - **Vanilla JavaScript**: Efficient DOM manipulation and asynchronous API calls.
 - **Python Backend**: A lightweight custom server to handle dictionary scraping, caching, and word lemmatization.
 - **Word Grouping**: Accurate lemmatization using NLTK to group different forms of the same word (e.g., "fling" and "flung").
+
+## Project Structure
+
+- **`app/`**: Core application logic.
+    - **`server.py`**: Main Python backend handling API requests, scraping, and file management.
+    - **`config/`**: Configuration management and schema validation.
+    - **`dictionaries/`**: Scraper implementations for Cambridge and Merriam-Webster dictionaries.
+    - **`processing/`**: Word processing utilities, including NLTK-based lemmatization.
+    - **`static/`**: Frontend assets including `index.html`, `style.css`, and `app.js`.
+- **`agents/`**: Documentation and logs for AI agents.
+- **`tests/`**: Test suite for backend components and scrapers.
+- **`pyproject.toml`**: Project dependencies and metadata managed by `uv`.
