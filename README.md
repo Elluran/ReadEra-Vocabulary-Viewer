@@ -46,3 +46,8 @@ To sync your vocabulary with Anki and hide words you already know:
 3. The application will automatically attempt to sync on startup.
 4. Use the "Sync Anki" button to manually refresh the word list.
 5. Enable "Hide words already in Anki" to filter your view.
+
+## Run tests
+```bash
+uv run python3 -m unittest discover tests
+```
