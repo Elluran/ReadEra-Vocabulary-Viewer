@@ -10,3 +10,16 @@ dependencies = [
     "pydantic>=2.13.4",
     "requests>=2.34.2",
 ]
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[project.scripts]
+readera-server = "app.server:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

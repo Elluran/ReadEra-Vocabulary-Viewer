@@ -29,7 +29,11 @@ uv sync
 
 ### 3. Run the Application
 ```bash
-uv run server.py
+uv run readera-server
+```
+or
+```bash
+uv run -m app.server
 ```
 The application will be available at `http://localhost:8000`.
 

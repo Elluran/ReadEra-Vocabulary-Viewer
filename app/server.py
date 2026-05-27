@@ -247,6 +247,8 @@ class DictionaryHandler(BaseHTTPRequestHandler):
             local_path = path.lstrip('/')
             
             # Check in app/static first
+            # Since server.py is now in app/, we need to look for static files relative to the project root
+            # or adjust the path. The current working directory is expected to be the project root.
             static_path = os.path.join('app', 'static', local_path)
             if os.path.exists(static_path) and os.path.isfile(static_path):
                 local_path = static_path
@@ -272,11 +274,11 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
 
 def run(server_class=ThreadedHTTPServer, handler_class=DictionaryHandler, port=8000):
+    ensure_config_exists()
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     print(f"Starting server on port {port}...")
     httpd.serve_forever()
 
 if __name__ == "__main__":
-    ensure_config_exists()
     run()
