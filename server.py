@@ -2,7 +2,7 @@ import os
 import json
 import hashlib
 import tomllib
-from config_schema import Config
+from app.config.config import Config, save_config, ensure_config_exists, CONFIG_PATH
 import uuid
 import time
 import requests
@@ -17,29 +17,6 @@ from app.processing.word import lemmatize_words
 CACHE_DIR = "cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-CONFIG_PATH = "config.toml"
-
-def save_config(config: Config):
-    """Save Config object to config.toml."""
-    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
-        config_dict = config.model_dump()
-        for section, options in config_dict.items():
-            f.write(f'[{section}]\n')
-            for key, value in options.items():
-                if isinstance(value, bool):
-                    f.write(f'{key} = {"true" if value else "false"}\n')
-                elif isinstance(value, (int, float)):
-                    f.write(f'{key} = {value}\n')
-                else:
-                    f.write(f'{key} = "{value}"\n')
-            f.write('\n')
-
-def ensure_config_exists():
-    """Check if config.toml exists, if not create it with default values."""
-    if not os.path.exists(CONFIG_PATH):
-        print(f"{CONFIG_PATH} not found. Creating with default values...")
-        config = Config()
-        save_config(config)
 
 def get_cache_path(word, dictionary="cambridge"):
     hash_name = hashlib.md5(f"{dictionary}_{word.lower()}".encode()).hexdigest()
