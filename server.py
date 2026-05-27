@@ -1,6 +1,8 @@
 import os
 import json
 import hashlib
+import tomllib
+from config_schema import Config
 import uuid
 import time
 import requests
@@ -638,6 +640,25 @@ class DictionaryHandler(BaseHTTPRequestHandler):
                     self.send_error(500, f"Error proxying audio: {e}")
             else:
                 self.send_error(400, "URL parameter missing")
+        elif path == '/api/config':
+            config_path = 'config.toml'
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'rb') as f:
+                        config_data = tomllib.load(f)
+                    
+                    # Validate with Pydantic
+                    config = Config(**config_data)
+                    
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(config.model_dump_json().encode())
+                except Exception as e:
+                    self.send_error(500, f"Error reading or validating config: {e}")
+            else:
+                self.send_error(404, "Config file not found")
         else:
             # Serve static files
             if path == '/':

@@ -902,3 +902,81 @@ input[type="file"] {
 .secondary-btn:hover {
     background-color: #7f8c8d;
 }
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 50%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #2c3e50;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover {
+    color: #333;
+}
+
+.options-list {
+    padding: 20px;
+}
+
+.option-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.option-item:last-child {
+    border-bottom: none;
+}
+
+.option-item label {
+    font-weight: 500;
+    cursor: pointer;
+    flex: 1;
+}
+
+.option-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}

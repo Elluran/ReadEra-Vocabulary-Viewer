@@ -128,6 +128,15 @@
 - **Sorting**:
 - Added "Newest First" and "Oldest First" sorting options based on the time of the last encounter (word modification time).
 
+## 2026-05-27
+- **Options Menu**:
+    - Added an options button to the header that opens a modal with settings.
+    - Implemented `/api/config` endpoint in `server.py` to serve settings from `config.toml`.
+    - Added a dummy option "enable anki cards editor" to `config.toml`.
+    - Styled the options modal and list in `style.css`.
+    - Implemented `OptionsManager` in a separate [`options.js`](options.js) to handle fetching and displaying options.
+    - Added server-side configuration validation using Pydantic with a dedicated [`config_schema.py`](config_schema.py).
+
 ## 2026-05-16
 - **UI Enhancements**:
     - Added a word counter to the main panel that displays the number of entries currently shown versus the total number of entries in the library.
