@@ -48,7 +48,7 @@ let currentCardData = {
     bookExamples: []
 };
 let savedScrollPosition = 0;
-let config = { options: {} };
+let config = { options: {}, dictionaries: {} };
 
 fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -204,9 +204,12 @@ document.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('configChanged', (e) => {
-    const { key, value } = e.detail;
-    if (key === 'enable_anki_cards_editor') {
+    const { section, key, value } = e.detail;
+    if (section === 'options' && key === 'enable_anki_cards_editor') {
         config.options.enable_anki_cards_editor = value;
+        applyConfig();
+    } else if (section === 'dictionaries') {
+        config.dictionaries[key] = value;
         applyConfig();
     }
 });
@@ -865,6 +868,10 @@ async function fetchDefinition(word) {
     }
 
     const fetchDict = async (dict) => {
+        if (config.dictionaries[dict] === false) {
+            dictionaryCache[word][dict] = { error: `${dict} dictionary is disabled in settings` };
+            return;
+        }
         try {
             const response = await fetch(`/api/dictionary?word=${encodeURIComponent(word)}&dict=${dict}`);
             if (!response.ok) throw new Error(`Failed to fetch ${dict} definition`);
@@ -887,6 +894,12 @@ async function fetchDefinition(word) {
         fetchDict('cambridge'),
         fetchDict('merriam')
     ]);
+
+    // If all dictionaries are disabled, show a message
+    const allDisabled = Object.values(config.dictionaries).every(v => v === false);
+    if (allDisabled) {
+        dictionaryView.innerHTML = `<div class="dictionary-placeholder"><p>All dictionaries are disabled in settings.</p></div>`;
+    }
 }
 
 function renderCurrentDefinition() {
@@ -1185,6 +1198,21 @@ function applyConfig() {
             exitAnkiMode();
         }
     }
+
+    // Handle dictionary tabs visibility
+    dictTabs.forEach(tab => {
+        const dict = tab.dataset.dict;
+        const isEnabled = config.dictionaries[dict] !== false;
+        tab.style.display = isEnabled ? '' : 'none';
+        
+        // If current dictionary is disabled, switch to the first enabled one
+        if (currentDictionary === dict && !isEnabled) {
+            const firstEnabled = Array.from(dictTabs).find(t => config.dictionaries[t.dataset.dict] !== false);
+            if (firstEnabled) {
+                firstEnabled.click();
+            }
+        }
+    });
 }
 
 async function init() {
