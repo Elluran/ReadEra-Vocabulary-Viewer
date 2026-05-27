@@ -245,6 +245,12 @@ class DictionaryHandler(BaseHTTPRequestHandler):
             
             # Remove leading slash for local file path
             local_path = path.lstrip('/')
+            
+            # Check in app/static first
+            static_path = os.path.join('app', 'static', local_path)
+            if os.path.exists(static_path) and os.path.isfile(static_path):
+                local_path = static_path
+            
             if os.path.exists(local_path) and os.path.isfile(local_path):
                 self.send_response(200)
                 if path.endswith('.html'):
