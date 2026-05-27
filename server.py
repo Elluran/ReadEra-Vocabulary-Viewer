@@ -9,23 +9,10 @@ import requests
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 import urllib.parse
-import nltk
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet
 
 from app.dictionaries.cambridge import get_cambridge_word_info
 from app.dictionaries.merriam import get_merriam_webster_word_info
-
-# Initialize NLTK
-try:
-    lemmatizer = WordNetLemmatizer()
-    # Test if data is available
-    lemmatizer.lemmatize("test")
-except LookupError:
-    print("NLTK data not found. Downloading...")
-    nltk.download('wordnet')
-    nltk.download('omw-1.4')
-    lemmatizer = WordNetLemmatizer()
+from app.processing.word import lemmatize_words
 
 CACHE_DIR = "cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -58,32 +45,6 @@ def get_cache_path(word, dictionary="cambridge"):
     hash_name = hashlib.md5(f"{dictionary}_{word.lower()}".encode()).hexdigest()
     return os.path.join(CACHE_DIR, f"{hash_name}.json")
 
-
-def get_wordnet_pos(treebank_tag):
-    if treebank_tag.startswith('J'):
-        return wordnet.ADJ
-    elif treebank_tag.startswith('V'):
-        return wordnet.VERB
-    elif treebank_tag.startswith('N'):
-        return wordnet.NOUN
-    elif treebank_tag.startswith('R'):
-        return wordnet.ADV
-    else:
-        return wordnet.NOUN
-
-def lemmatize_words(words):
-    results = {}
-    for word in words:
-        w = word.lower()
-        # Group verb tenses (flung -> fling)
-        v_lemma = lemmatizer.lemmatize(w, pos=wordnet.VERB)
-        if v_lemma != w:
-            results[word] = v_lemma
-        else:
-            # Group plurals (cats -> cat)
-            n_lemma = lemmatizer.lemmatize(w, pos=wordnet.NOUN)
-            results[word] = n_lemma
-    return results
 
 class DictionaryHandler(BaseHTTPRequestHandler):
     def do_POST(self):
