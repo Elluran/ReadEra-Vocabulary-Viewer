@@ -19,6 +19,17 @@ const dictTabs = document.querySelectorAll('.dict-tab');
 const wordCounter = document.getElementById('wordCounter');
 const toggleBookListBtn = document.getElementById('toggleBookListBtn');
 
+// Anki Card Mode Elements
+const ankiCardMode = document.getElementById('ankiCardMode');
+const ankiCardPreview = document.getElementById('ankiCardPreview');
+const activeWordContainer = document.getElementById('activeWordContainer');
+const deckSelect = document.getElementById('deckSelect');
+const addCardBtn = document.getElementById('addCardBtn');
+const cancelAnkiBtn = document.getElementById('cancelAnkiBtn');
+const previewName = document.getElementById('previewName');
+const previewContext = document.getElementById('previewContext');
+const previewBack = document.getElementById('previewBack');
+
 let lemmaMap = {}; // original_word -> lemma
 let currentWord = null;
 let currentDictionary = 'cambridge';
@@ -27,6 +38,14 @@ let searchTimeout = null;
 let excludedBooks = new Set();
 let isBookListView = false;
 let searchExcludedBooks = false;
+let isAnkiMode = false;
+let currentCardData = {
+    name: '',
+    context: '',
+    back: '',
+    definitions: [],
+    bookExamples: []
+};
 
 fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -167,6 +186,20 @@ toggleBookListBtn.addEventListener('click', () => {
     filterAndRender();
 });
 
+addCardBtn.addEventListener('click', async () => {
+    await addCardToAnki();
+});
+
+cancelAnkiBtn.addEventListener('click', () => {
+    exitAnkiMode();
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isAnkiMode) {
+        exitAnkiMode();
+    }
+});
+
 async function invokeAnki(action, params = {}) {
     try {
         const response = await fetch('http://localhost:8765', {
@@ -212,6 +245,17 @@ async function syncWithAnki() {
         ankiStatus.title = `Connected. Found ${ankiWords.size} words in all decks`;
         console.log(`Synced ${ankiWords.size} words from all Anki decks`);
         
+        // Fetch decks for the selector
+        const decks = await invokeAnki('deckNames');
+        const currentDeck = localStorage.getItem('selectedAnkiDeck');
+        deckSelect.innerHTML = decks.map(deck => 
+            `<option value="${deck}" ${deck === currentDeck ? 'selected' : ''}>${deck}</option>`
+        ).join('');
+        
+        deckSelect.addEventListener('change', () => {
+            localStorage.setItem('selectedAnkiDeck', deckSelect.value);
+        });
+
         if (hideAnkiToggle.checked) {
             filterAndRender();
         }
@@ -332,6 +376,16 @@ function filterAndRender() {
     });
     renderWords(filtered);
     updateCounter(filtered.length, processedWords.length);
+    
+    if (isAnkiMode) {
+        document.body.classList.add('anki-mode-on');
+        ankiCardMode.style.display = 'block';
+        ankiCardPreview.style.display = 'block';
+    } else {
+        document.body.classList.remove('anki-mode-on');
+        ankiCardMode.style.display = 'none';
+        ankiCardPreview.style.display = 'none';
+    }
 }
 
 function updateCounter(filteredCount, totalCount) {
@@ -469,6 +523,7 @@ function renderWords(words) {
     words.forEach(word => {
         const wordDiv = document.createElement('div');
         wordDiv.className = 'word-item' + (currentWord === word.data.word_key ? ' active' : '');
+        wordDiv.dataset.word = word.data.word_key;
 
         const bookTitle = docMap[word.data.doc_uri] || 'Unknown Book';
         const wordKey = word.data.word_key;
@@ -478,14 +533,22 @@ function renderWords(words) {
         let examplesHtml = '';
         if (word.ctxs && word.ctxs.length > 0) {
             examplesHtml = `
-                <details class="example-spoiler">
+                <details class="example-spoiler" ${isAnkiMode ? 'open' : ''}>
                     <summary>Show Examples (${word.ctxs.length})</summary>
                     <div class="example-list-container">
                         <button class="copy-examples-btn" onclick="event.stopPropagation(); copyExamplesAsHtml(this, '${wordKey.replace(/'/g, "\\'")}')">
                             Copy
                         </button>
                         <div class="example-list">
-                            ${word.ctxs.map(ctx => `<div class="example-item">${highlightWord(ctx.ctx_title, allVariations)}</div>`).join('')}
+                            ${word.ctxs.map((ctx, idx) => `
+                                <div class="example-item">
+                                    ${highlightWord(ctx.ctx_title, allVariations)}
+                                    <div class="example-actions anki-only">
+                                        <button class="ex-action-btn" onclick="event.stopPropagation(); addExampleToField('${wordKey.replace(/'/g, "\\'")}', ${idx}, 'context')">context</button>
+                                        <button class="ex-action-btn" onclick="event.stopPropagation(); addExampleToField('${wordKey.replace(/'/g, "\\'")}', ${idx}, 'back')">back</button>
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 </details>
@@ -494,10 +557,13 @@ function renderWords(words) {
 
         wordDiv.innerHTML = `
             <div class="word-header">
-                <h2 class="word-title">
-                    ${word.data.word_key}
-                    ${variations.length > 0 ? `<span class="variations">(${variations.join(', ')})</span>` : ''}
-                </h2>
+                <div class="word-title-group">
+                    <h2 class="word-title">
+                        ${word.data.word_key}
+                        ${variations.length > 0 ? `<span class="variations">(${variations.join(', ')})</span>` : ''}
+                    </h2>
+                    <button class="make-card-btn" onclick="event.stopPropagation(); enterAnkiMode('${wordKey.replace(/'/g, "\\'")}')">make a card</button>
+                </div>
                 <span class="book-title">${bookTitle}</span>
             </div>
             ${examplesHtml}
@@ -639,6 +705,9 @@ function renderDefinition(data) {
                         </div>
                         <button class="copy-def-btn" onclick="copyDefinitionAsHtml(this, ${index})">
                             Copy
+                        </button>
+                        <button class="add-to-card-btn anki-only" onclick="addDefinitionToCard(${index})">
+                            add
                         </button>
                     </div>
                     ${entry.images && entry.images.length > 0 ? `
@@ -810,8 +879,32 @@ function renderCurrentDefinition() {
     if (data) {
         lastFetchedData = data;
         renderDefinition(data);
+        
+        // If in Anki mode and back is empty, auto-populate transcription/audio
+        if (isAnkiMode && !currentCardData.back) {
+            populateAnkiBack(data);
+        }
     } else {
         dictionaryView.innerHTML = `<div class="dictionary-placeholder"><p>Loading ${currentDictionary === 'cambridge' ? 'Cambridge' : 'Merriam-Webster'} definition for "${currentWord}"...</p></div>`;
+    }
+}
+
+function populateAnkiBack(data) {
+    const ukPron = data.pronunciations.find(p => p.region === 'UK') || data.pronunciations[0];
+    if (ukPron) {
+        let backContent = '';
+        if (ukPron.ipa) backContent += `/${ukPron.ipa}/ `;
+        if (ukPron.audio) {
+            const filename = 'readera_' + ukPron.audio.split('/').pop().replace(/[^a-zA-Z0-9.-]/g, '_');
+            backContent += `[sound:${filename}]`;
+            // Pre-store audio in Anki
+            invokeAnki('storeMediaFile', {
+                filename: filename,
+                url: ukPron.audio
+            }).catch(console.error);
+        }
+        currentCardData.back = backContent;
+        updatePreview();
     }
 }
 
@@ -839,6 +932,130 @@ async function copyAllDefinitionsAsHtml(btn) {
         .map(entry => formatDefinitionHtml(entry))
         .join('\n\n');
     await copyToClipboard(html, btn);
+}
+
+function enterAnkiMode(wordKey) {
+    isAnkiMode = true;
+    currentWord = wordKey;
+    currentCardData = {
+        name: wordKey,
+        context: '',
+        back: '',
+        definitions: [],
+        bookExamples: []
+    };
+    
+    // Auto-add transcription and audio if available
+    if (lastFetchedData && lastFetchedData.word.toLowerCase() === wordKey.toLowerCase()) {
+        populateAnkiBack(lastFetchedData);
+    }
+
+    updatePreview();
+    filterAndRender();
+    
+    // Move the active word element to the right column
+    const activeWordEl = document.querySelector(`.word-item[data-word="${wordKey.replace(/'/g, "\\'")}"]`);
+    if (activeWordEl) {
+        activeWordContainer.innerHTML = '';
+        const clone = activeWordEl.cloneNode(true);
+        activeWordContainer.appendChild(clone);
+    }
+
+    fetchDefinition(wordKey);
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function exitAnkiMode() {
+    isAnkiMode = false;
+    currentCardData = { name: '', context: '', back: '', definitions: [], bookExamples: [] };
+    activeWordContainer.innerHTML = '';
+    updatePreview();
+    filterAndRender();
+}
+
+function updatePreview() {
+    previewName.innerHTML = currentCardData.name;
+    previewContext.innerHTML = currentCardData.context;
+    
+    // Combine definitions and book examples, ensuring examples are at the bottom
+    let backHtml = currentCardData.back; // This contains transcription/audio
+    if (currentCardData.definitions.length > 0) {
+        if (backHtml) backHtml += '\n';
+        backHtml += currentCardData.definitions.join('\n');
+    }
+    if (currentCardData.bookExamples.length > 0) {
+        backHtml += '<hr>\n<ul style="text-align: left;">\n';
+        backHtml += currentCardData.bookExamples.map(ex => `<li>${ex}</li>`).join('\n');
+        backHtml += '\n</ul>';
+    }
+    
+    previewBack.innerHTML = backHtml;
+}
+
+function addDefinitionToCard(index) {
+    if (!lastFetchedData || !lastFetchedData.definitions[index]) return;
+    const entry = lastFetchedData.definitions[index];
+    const html = formatDefinitionHtml(entry);
+    
+    if (currentCardData.definitions.includes(html)) return;
+    
+    currentCardData.definitions.push(html);
+    updatePreview();
+}
+
+function addExampleToField(wordKey, exampleIdx, field) {
+    const word = allWords.find(w => w.data.word_key === wordKey);
+    if (!word || !word.ctxs[exampleIdx]) return;
+    
+    let example = word.ctxs[exampleIdx].ctx_title;
+    // Highlight word in example
+    const variations = word.variations ? Array.from(word.variations) : [wordKey];
+    example = highlightWord(example, variations).replace(/<mark class="highlight">(.*?)<\/mark>/gi, '<b>$1</b>');
+
+    if (field === 'context') {
+        currentCardData.context = example;
+    } else if (field === 'back') {
+        if (currentCardData.bookExamples.includes(example)) return;
+        currentCardData.bookExamples.push(example);
+    }
+    updatePreview();
+}
+
+async function addCardToAnki() {
+    const deckName = deckSelect.value;
+    if (!deckName) {
+        alert('Please select a deck');
+        return;
+    }
+
+    const note = {
+        deckName: deckName,
+        modelName: "Basic",
+        fields: {
+            "Name": currentCardData.name,
+            "Сontext": currentCardData.context,
+            "Back": previewBack.innerHTML
+        },
+        options: {
+            allowDuplicate: true
+        },
+        tags: ["readera"]
+    };
+
+    try {
+        const models = await invokeAnki('modelNames');
+        let modelName = models.find(m => m === "ReadEra") || models[0];
+        note.modelName = modelName;
+
+        await invokeAnki('addNote', { note });
+        alert('Card added successfully!');
+        exitAnkiMode();
+    } catch (err) {
+        console.error('Failed to add card:', err);
+        alert('Failed to add card: ' + err.message + '\nMake sure you have a model with fields: Name, Сontext, Back');
+    }
 }
 
 // Load frequency data on startup
